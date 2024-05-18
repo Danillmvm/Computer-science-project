@@ -1,0 +1,203 @@
+import flet as ft
+import numpy as np
+import matplotlib.pyplot as plt
+import telebot
+API_TOKEN = ''
+chat_id = ''
+bot = telebot.TeleBot(API_TOKEN)
+# Функция для выполнения операций с матрицами
+def main(page: ft.Page):
+    # Проверка, является ли строка числом
+    def is_number(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+
+
+    # Сложение матриц
+    def matric_addition(matrix1, matrix2):
+        result = []
+        us = []
+        for o in range(len(matrix1)):
+            for i1 in range(len(matrix1[0])):
+                us.append(0)
+            result.append(us)
+            us = []
+        for i in range(len(matrix1)):
+            for j in range(len(matrix1[0])):
+                result[i][j] = matrix1[i][j] + matrix2[i][j]
+        return result
+
+
+    # Вычитание матриц
+    def matric_subtraction(matrix1, matrix2):
+        result = []
+        us = []
+        for o in range(len(matrix1)):
+            for i1 in range(len(matrix1[0])):
+                us.append(0)
+            result.append(us)
+            us = []
+        for i in range(len(matrix1)):
+            for j in range(len(matrix1[0])):
+                result[i][j] = matrix1[i][j] - matrix2[i][j]
+        return result
+
+
+    # Умножение матриц
+    def matric_multiplcation(matrix1, matrix2):
+        result = []
+        us = []
+        for o in range(len(matrix1)):
+            for i1 in range(len(matrix1[0])):
+                us.append(0)
+            result.append(us)
+            us = []
+        for i in range(len(matrix1)):
+            for j in range(len(matrix2[0])):
+                for k in range(len(matrix2)): result[i][j] += matrix1[i][k] * matrix2[k][j]
+
+        return result
+
+    # Поиск обратной матрицы
+    def the_inverse_matrix(matrix1):
+        matrix_np = np.array(matrix1)
+        result = np.linalg.inv(matrix_np)
+        return result
+
+    # Транспонирование матрицы
+    def matrix_transportation(matrix1):
+        matrix = np.array(matrix1)
+        result = matrix.T
+        return result
+
+
+
+    # Функция для работы с матрицей
+    def matrix(a,b):
+        flag=["1"]
+        time1=[]
+        time2=[]
+        if not is_number(a) or not is_number(b):
+            bot.send_message(chat_id, text="Пожалуйста, введите корректные числа для количества столбцов и строк")
+            return
+        a=int(a)
+        b=int(b)
+
+        def button_clicked(e):
+            for i in range(len(rows)):
+                if not all(map(is_number, [c.content.value for c in rows[0].cells])) or not all(
+                        map(is_number, [c.content.value for c in rows2[i].cells])):
+                    bot.send_message(chat_id, text="Пожалуйста, введите корректные числа в поля для матриц")
+                    return
+            time1 = []
+            time2 = []
+            values1 = [[int(c.content.value) for c in row.cells] for row in rows]
+            time1.append(values1)
+            values2 = [[int(c.content.value) for c in row.cells] for row in rows2]
+            time2.append(values2)
+
+            if flag[len(flag)-1]=="0":
+
+                stroc1 = '\n'.join(['\t'.join(map(str, row)) for row in matric_addition(time1[0], time2[0])])
+
+                bot.send_message(chat_id, text=stroc1)
+
+            elif flag[len(flag)-1]=="1":
+
+                stroc2 = '\n'.join(['\t'.join(map(str, row)) for row in matric_subtraction(time1[0], time2[0])])
+                bot.send_message(chat_id, text=stroc2)
+
+            elif flag[len(flag)-1]=="2":
+
+                stroc3 = '\n'.join(['\t'.join(map(str, row)) for row in matric_multiplcation(time1[0], time2[0])])
+
+                bot.send_message(chat_id, text=stroc3)
+
+            elif flag[len(flag)-1]=="3":
+                plt.imshow(time1[0])
+                plt.show()
+
+
+        page.clean()
+        flag = ["1"]
+        columns = [ft.DataColumn(ft.Text(i + 1)) for i in range(a)]
+        rows = []
+        for j in range(b):
+            cells = [ft.DataCell(
+                ft.TextField(value=0, text_align=ft.TextAlign.RIGHT, width=100)) for i in range(a)]
+            rows.append(ft.DataRow(cells=cells))
+
+        table1 = ft.DataTable(
+            column_spacing=100,
+            heading_row_height=100,
+            width=700,
+            columns=columns,
+            rows=rows
+        )
+
+        columns2 = [ft.DataColumn(ft.Text(i + 1)) for i in range(a)]
+        rows2 = []
+        for j in range(b):
+            cells2 = [ft.DataCell(
+                ft.TextField(value=0, text_align=ft.TextAlign.RIGHT, width=100)) for i in range(a)]
+            rows2.append(ft.DataRow(cells=cells2))
+
+        table2 = ft.DataTable(
+            column_spacing=100,
+            heading_row_height=100,
+            width=700,
+            columns=columns2,
+            rows=rows2
+        )
+        page.add(table1)
+
+        page.add(
+            ft.CupertinoSlidingSegmentedButton(
+                selected_index=1,
+                thumb_color=ft.colors.BLUE_400,
+                on_change=lambda e: flag.append(e.data),
+                padding=ft.padding.symmetric(0, 10),
+                controls=[
+                    ft.Text("+"),
+                    ft.Text("-"),
+                    ft.Text("*"),
+                    ft.Text("Tab"),
+                ],
+            ),
+        )
+
+        page.add(table2)
+
+        page.add(ft.TextButton(text="Вычислить", on_click=lambda e: button_clicked(e)))
+
+
+    # Инициализация полей для ввода кол-ва столбцов и строк
+    ns = ft.TextField(value="0", text_align=ft.TextAlign.RIGHT, width=100)
+    nst = ft.TextField(value="0", text_align=ft.TextAlign.RIGHT, width=100)
+    b = ft.TextButton("Перейти к заполнению матриц", on_click=lambda e: matrix(ns.value, nst.value))
+
+    page.add(
+        ft.Row(
+            [
+                ft.Text(
+                    "Ввести кол-во столбцов"
+                ),
+                ns,
+            ]
+        ),
+
+        ft.Row(
+            [
+                ft.Text(
+                    "Ввести кол-во строк"
+                ),
+                nst,
+            ]
+        ),
+        b
+    )
+# Запуск приложения
+ft.app(target=main)
